@@ -12,6 +12,8 @@ export interface Env {
   API_TOKEN: string;
   TELEGRAM_WEBHOOK_SECRET: string;
   SESSION_SECRET: string;
+  // Só local: "1" intercepta as chamadas ao Telegram (testes sem token real).
+  MOCK_TELEGRAM?: string;
 }
 
 import type { User } from "./db/schema";

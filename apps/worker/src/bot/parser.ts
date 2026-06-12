@@ -1,0 +1,103 @@
+import type { TransactionType } from "@finbot/shared";
+import { normalize } from "../core/categorize";
+
+// Palavras que marcam uma ENTRADA (além do prefixo "+"). O prefixo "-" força saída.
+const ENTRADA_KEYWORDS = [
+  "recebi", "recebido", "recebimento", "salario", "ganhei", "entrada",
+  "deposito", "rendimento", "freela", "freelance", "reembolso", "vale",
+  "pix recebido", "caiu", "pagamento recebido",
+];
+
+export type ParsedEntry = {
+  type: TransactionType;
+  amountCents: number;
+  description: string;
+};
+
+// Converte um token "dinheiro" BR em centavos. Regras:
+//   - vírgula presente ⇒ separador decimal; pontos são milhar ("1.234,56" → 123456)
+//   - sem vírgula, com ponto ⇒ ponto é decimal só se a última parte não tiver 3 dígitos
+//     ("12.50" → 1250; "1.234" → 123400; "100.000" → 10000000)
+//   - inteiro puro ⇒ reais ("50" → 5000)
+// Retorna null se o token não for um número válido > 0.
+export function parseMoneyToken(token: string): number | null {
+  const t = token.replace(/[^\d.,]/g, "");
+  if (!/\d/.test(t)) return null;
+
+  let reais: number;
+  if (t.includes(",")) {
+    const normalized = t.replace(/\./g, "").replace(",", ".");
+    reais = Number.parseFloat(normalized);
+  } else if (t.includes(".")) {
+    const lastDot = t.lastIndexOf(".");
+    const after = t.slice(lastDot + 1);
+    if (after.length === 3) {
+      // todos os pontos são milhar
+      reais = Number.parseFloat(t.replace(/\./g, ""));
+    } else {
+      // último ponto é decimal; pontos anteriores são milhar
+      const intPart = t.slice(0, lastDot).replace(/\./g, "");
+      reais = Number.parseFloat(`${intPart}.${after}`);
+    }
+  } else {
+    reais = Number.parseInt(t, 10);
+  }
+
+  if (!Number.isFinite(reais) || reais <= 0) return null;
+  return Math.round(reais * 100);
+}
+
+// Encontra todos os tokens que parecem dinheiro no texto.
+function findMoneyTokens(text: string): string[] {
+  const matches = text.match(/\d[\d.,]*/g);
+  return matches ?? [];
+}
+
+// Parseia uma mensagem livre em { type, amountCents, description }. Retorna null se não
+// houver valor reconhecível (o bot então responde que não entendeu).
+export function parseEntry(text: string): ParsedEntry | null {
+  const raw = text.trim();
+  if (raw.length === 0) return null;
+
+  let type: TransactionType = "saida";
+  let body = raw;
+  let explicitSign = false;
+  if (body.startsWith("+")) {
+    type = "entrada";
+    body = body.slice(1).trim();
+    explicitSign = true;
+  } else if (body.startsWith("-")) {
+    type = "saida";
+    body = body.slice(1).trim();
+    explicitSign = true;
+  }
+
+  // Escolhe o valor: prioriza um token com vírgula (decimal explícito); senão o primeiro.
+  const tokens = findMoneyTokens(body);
+  if (tokens.length === 0) return null;
+  const chosen =
+    tokens.find((t) => t.includes(",")) ?? tokens.find((t) => parseMoneyToken(t) !== null);
+  if (!chosen) return null;
+  const amountCents = parseMoneyToken(chosen);
+  if (amountCents === null) return null;
+
+  // Descrição = corpo sem o token do valor, colapsado.
+  const description = body
+    .replace(chosen, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // Detecção de entrada por keyword (só quando não houve sinal explícito + / -).
+  if (!explicitSign) {
+    const norm = ` ${normalize(raw)} `;
+    if (ENTRADA_KEYWORDS.some((kw) => norm.includes(` ${normalize(kw)} `))) {
+      type = "entrada";
+    }
+  }
+
+  return {
+    type,
+    amountCents,
+    description: description.length > 0 ? description : raw,
+  };
+}
