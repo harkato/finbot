@@ -141,3 +141,14 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Claude Code
+.claude/
+
+# Cloudflare / deploy / local secrets
+.wrangler/
+.dev.vars
+.vercel
+
+# Local databases
+*.sqlite
