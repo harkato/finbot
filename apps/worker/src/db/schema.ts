@@ -146,6 +146,29 @@ export const creditCards = sqliteTable(
 );
 
 export type CreditCard = typeof creditCards.$inferSelect;
+
+// Fase 5 — orçamentos por categoria (teto mensal recorrente).
+export const budgets = sqliteTable(
+  "budgets",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    categoryId: integer("category_id")
+      .notNull()
+      .references(() => categories.id),
+    monthlyLimitCents: integer("monthly_limit_cents").notNull(),
+  },
+  (t) => ({
+    userCategoryUnique: uniqueIndex("budgets_user_category_unique").on(
+      t.userId,
+      t.categoryId,
+    ),
+  }),
+);
+
+export type Budget = typeof budgets.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Invite = typeof invites.$inferSelect;

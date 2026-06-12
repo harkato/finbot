@@ -1,7 +1,9 @@
 import { Bot, type Context, type Transformer, webhookCallback } from "grammy";
 import type { UserFromGetMe } from "grammy/types";
 import type { Context as HonoContext } from "hono";
+import type { BudgetStatus } from "@finbot/shared";
 import { listUserAccounts } from "../core/accounts";
+import { budgetStatusForTransaction, listBudgetsWithStatus } from "../core/budgets";
 import {
   computeInvoiceMonth,
   getInvoice,
@@ -41,6 +43,19 @@ const STUB_BOT_INFO: UserFromGetMe = {
   has_topics_enabled: false,
   allows_users_to_create_topics: false,
 };
+
+// Sufixo de aviso de orçamento na confirmação (seção 6.3): ⚠️ em 80%, 🚨 em 100%.
+function budgetSuffix(b: BudgetStatus): string {
+  if (!b) return "";
+  const pct = Math.round(b.ratio * 100);
+  if (b.ratio >= 1) {
+    return `\n🚨 Orçamento estourado: ${formatBRL(b.spentCents)} de ${formatBRL(b.limitCents)} (${pct}%)`;
+  }
+  if (b.ratio >= 0.8) {
+    return `\n⚠️ Atenção ao orçamento: ${formatBRL(b.spentCents)} de ${formatBRL(b.limitCents)} (${pct}%)`;
+  }
+  return "";
+}
 
 function registerHandlers(bot: Bot, env: Env): void {
   const database = db(env.DB);
@@ -178,6 +193,23 @@ function registerHandlers(bot: Bot, env: Env): void {
     await ctx.reply(`💳 Saldos\n${lines.join("\n")}\n\nTotal: ${formatBRL(total)}`);
   });
 
+  // /orcamento — status dos orçamentos do mês.
+  bot.command("orcamento", async (ctx) => {
+    const user = await userOf(ctx);
+    if (!user) return;
+    const list = await listBudgetsWithStatus(database, user.id, currentMonth());
+    if (list.length === 0) {
+      await ctx.reply("Você ainda não definiu orçamentos. Configure-os no dashboard. 🎯");
+      return;
+    }
+    const lines = list.map((b) => {
+      const pct = Math.round(b.ratio * 100);
+      const icon = b.ratio >= 1 ? "🚨" : b.ratio >= 0.8 ? "⚠️" : "✅";
+      return `${icon} ${b.categoryName}: ${formatBRL(b.spentCents)} / ${formatBRL(b.monthlyLimitCents)} (${pct}%)`;
+    });
+    await ctx.reply(`🎯 Orçamentos de ${formatMonth(currentMonth())}\n${lines.join("\n")}`);
+  });
+
   // /fatura — fatura aberta (corrente) de cada cartão.
   bot.command("fatura", async (ctx) => {
     const user = await userOf(ctx);
@@ -244,16 +276,19 @@ function registerHandlers(bot: Bot, env: Env): void {
     const cat = await getUserCategory(database, user.id, tx.categoryId);
     const emoji = parsed.type === "entrada" ? "🟢" : "🔴";
     const label = parsed.type === "entrada" ? "Entrada" : "Saída";
+    const suffix = budgetSuffix(await budgetStatusForTransaction(database, tx));
 
     if (cardId !== undefined) {
       const card = cards.find((c) => c.id === cardId);
       await ctx.reply(
         `${emoji} ${label} no cartão ${card?.name ?? ""}: ${formatBRL(tx.amountCents)}\n` +
-          `${tx.description} • ${cat?.name ?? "—"} • fatura ${formatMonth(tx.invoiceMonth ?? "")}`,
+          `${tx.description} • ${cat?.name ?? "—"} • fatura ${formatMonth(tx.invoiceMonth ?? "")}` +
+          suffix,
       );
     } else {
       await ctx.reply(
-        `${emoji} ${label} registrada: ${formatBRL(tx.amountCents)}\n${tx.description} • ${cat?.name ?? "—"}`,
+        `${emoji} ${label} registrada: ${formatBRL(tx.amountCents)}\n${tx.description} • ${cat?.name ?? "—"}` +
+          suffix,
       );
     }
   });

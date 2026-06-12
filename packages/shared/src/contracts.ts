@@ -136,6 +136,13 @@ export type PatchCard = z.infer<typeof patchCardSchema>;
 export const invoiceQuerySchema = z.object({ month: isoMonth.optional() });
 export const payInvoiceSchema = z.object({ month: isoMonth });
 
+// ── Orçamentos (Fase 5) ───────────────────────────────────────────────────────
+export const upsertBudgetSchema = z.object({
+  categoryId: positiveInt,
+  monthlyLimitCents: z.number().int().positive(),
+});
+export type UpsertBudget = z.infer<typeof upsertBudgetSchema>;
+
 // ── Status de orçamento (anexado à resposta do POST; Fase 5) ───────────────────
 export type BudgetStatus = {
   spentCents: number;

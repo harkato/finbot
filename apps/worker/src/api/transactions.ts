@@ -4,6 +4,7 @@ import {
   transactionQuerySchema,
 } from "@finbot/shared";
 import { Hono } from "hono";
+import { budgetStatusForTransaction } from "../core/budgets";
 import {
   createTransaction,
   deleteTransaction,
@@ -25,13 +26,11 @@ transactionsRoutes.post("/", async (c) => {
   if (!parsed.success) {
     return c.json({ error: "validation", issues: parsed.error.issues }, 422);
   }
-  const transaction = await createTransaction(
-    db(c.env.DB),
-    c.get("userId"),
-    parsed.data,
-  );
-  // budget: status do orçamento da categoria — implementado na Fase 5 (null por ora).
-  return c.json({ transaction, budget: null }, 201);
+  const database = db(c.env.DB);
+  const transaction = await createTransaction(database, c.get("userId"), parsed.data);
+  // budget: status do orçamento da categoria no mês da transação (seção 6.3).
+  const budget = await budgetStatusForTransaction(database, transaction);
+  return c.json({ transaction, budget }, 201);
 });
 
 transactionsRoutes.get("/", async (c) => {

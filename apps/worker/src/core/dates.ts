@@ -25,6 +25,14 @@ export function currentMonth(): string {
   return monthOf(todaySaoPaulo());
 }
 
+// Soma `delta` dias a uma data "YYYY-MM-DD". Usa meio-dia UTC para não escorregar de dia
+// por fuso/DST. Retorna "YYYY-MM-DD".
+export function addDays(date: string, delta: number): string {
+  const base = new Date(`${date}T12:00:00Z`).getTime();
+  const d = new Date(base + delta * 86_400_000);
+  return d.toISOString().slice(0, 10);
+}
+
 // Soma `delta` meses a um "YYYY-MM" (delta pode ser negativo). Retorna "YYYY-MM".
 export function addMonths(month: string, delta: number): string {
   const [y, m] = month.split("-").map(Number) as [number, number];
