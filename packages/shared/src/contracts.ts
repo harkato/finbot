@@ -108,6 +108,34 @@ export const patchAccountSchema = z
   .refine((v) => Object.keys(v).length > 0, { message: "nada para atualizar" });
 export type PatchAccount = z.infer<typeof patchAccountSchema>;
 
+// ── Cartões de crédito (Fase 4) ───────────────────────────────────────────────
+const dayOfMonth = z.number().int().min(1).max(28);
+
+export const createCardSchema = z.object({
+  name: z.string().trim().min(1, "nome obrigatório"),
+  limitCents: z.number().int().positive(),
+  closingDay: dayOfMonth,
+  dueDay: dayOfMonth,
+  payFromAccountId: positiveInt.nullable().optional(),
+});
+export type CreateCard = z.infer<typeof createCardSchema>;
+
+export const patchCardSchema = z
+  .object({
+    name: z.string().trim().min(1),
+    limitCents: z.number().int().positive(),
+    closingDay: dayOfMonth,
+    dueDay: dayOfMonth,
+    payFromAccountId: positiveInt.nullable(),
+    archived: z.boolean(),
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, { message: "nada para atualizar" });
+export type PatchCard = z.infer<typeof patchCardSchema>;
+
+export const invoiceQuerySchema = z.object({ month: isoMonth.optional() });
+export const payInvoiceSchema = z.object({ month: isoMonth });
+
 // ── Status de orçamento (anexado à resposta do POST; Fase 5) ───────────────────
 export type BudgetStatus = {
   spentCents: number;

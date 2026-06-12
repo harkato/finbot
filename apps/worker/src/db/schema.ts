@@ -123,6 +123,29 @@ export const accounts = sqliteTable(
 );
 
 export type Account = typeof accounts.$inferSelect;
+
+// Fase 4 — cartões de crédito. Gasto no cartão não afeta saldo de conta; entra na fatura
+// invoiceMonth (seção 6.2). payFromAccountId = conta que paga a fatura.
+export const creditCards = sqliteTable(
+  "credit_cards",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    name: text("name").notNull(),
+    limitCents: integer("limit_cents").notNull(),
+    closingDay: integer("closing_day").notNull(), // 1-28
+    dueDay: integer("due_day").notNull(), // 1-28
+    payFromAccountId: integer("pay_from_account_id"),
+    archived: integer("archived", { mode: "boolean" }).notNull().default(false),
+  },
+  (t) => ({
+    byUser: index("credit_cards_user_idx").on(t.userId),
+  }),
+);
+
+export type CreditCard = typeof creditCards.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Invite = typeof invites.$inferSelect;

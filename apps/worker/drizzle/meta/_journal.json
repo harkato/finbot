@@ -15,6 +15,13 @@
       "when": 1781234736103,
       "tag": "0001_fair_peter_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1781235088485,
+      "tag": "0002_wet_northstar",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,18 @@ export async function listUserCategories(
   });
 }
 
+// Busca uma categoria do usuário pelo nome exato (ex.: "fatura cartão", "outros").
+export async function getUserCategoryByName(
+  database: Db,
+  userId: number,
+  name: string,
+): Promise<Category | null> {
+  const row = await database.query.categories.findFirst({
+    where: and(eq(categories.userId, userId), eq(categories.name, name)),
+  });
+  return row ?? null;
+}
+
 // Verifica se uma categoria pertence ao usuário (escopo multi-tenant).
 export async function getUserCategory(
   database: Db,

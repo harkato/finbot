@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { accountsRoutes } from "./api/accounts";
+import { cardsRoutes } from "./api/cards";
 import { health } from "./api/health";
 import { internalRoutes } from "./api/internal";
 import { reportsRoutes } from "./api/reports";
@@ -18,6 +19,7 @@ app.route("/api", health);
 app.route("/api/internal", internalRoutes);
 app.route("/api/transactions", transactionsRoutes);
 app.route("/api/accounts", accountsRoutes);
+app.route("/api/cards", cardsRoutes);
 app.route("/api", reportsRoutes);
 
 app.notFound((c) => c.json({ error: "not_found" }, 404));

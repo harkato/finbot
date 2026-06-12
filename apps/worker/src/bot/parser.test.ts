@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { parseEntry, parseMoneyToken } from "./parser";
+import { matchCard, parseEntry, parseMoneyToken } from "./parser";
 
 describe("parseMoneyToken", () => {
   it("inteiro puro = reais", () => {
@@ -56,5 +56,21 @@ describe("parseEntry", () => {
   });
   it("sem valor → null", () => {
     expect(parseEntry("oi tudo bem")).toBeNull();
+  });
+});
+
+describe("matchCard", () => {
+  const cards = [
+    { id: 1, name: "Itaú" },
+    { id: 2, name: "Nubank" },
+  ];
+  it('detecta "no <cartão>" (acento-insensível) e limpa a descrição', () => {
+    expect(matchCard("mercado no itau", cards)).toEqual({ cardId: 1, description: "mercado" });
+  });
+  it("detecta nome do cartão sem 'no'", () => {
+    expect(matchCard("uber nubank", cards)).toEqual({ cardId: 2, description: "uber" });
+  });
+  it("sem cartão → null", () => {
+    expect(matchCard("mercado", cards)).toBeNull();
   });
 });

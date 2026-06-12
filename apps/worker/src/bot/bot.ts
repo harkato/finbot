@@ -2,8 +2,13 @@ import { Bot, type Context, type Transformer, webhookCallback } from "grammy";
 import type { UserFromGetMe } from "grammy/types";
 import type { Context as HonoContext } from "hono";
 import { listUserAccounts } from "../core/accounts";
+import {
+  computeInvoiceMonth,
+  getInvoice,
+  listUserCards,
+} from "../core/cards";
 import { getUserCategory } from "../core/categories";
-import { currentMonth } from "../core/dates";
+import { currentMonth, todaySaoPaulo } from "../core/dates";
 import { createInvite, consumeInvite } from "../core/invites";
 import { getCashflow, getSummary } from "../core/reports";
 import {
@@ -16,7 +21,7 @@ import { createUserWithSeed, getUserByTelegramId, listUsers } from "../core/user
 import { db } from "../db/client";
 import type { AppEnv, Env } from "../env";
 import { formatBRL, formatDayMonth, formatMonth } from "./format";
-import { parseEntry } from "./parser";
+import { matchCard, parseEntry } from "./parser";
 
 // botInfo é estável; cacheado em escopo de módulo para evitar um getMe por update
 // (gotcha do Workers — seção 8). STUB é usado no modo mock (testes locais sem token).
@@ -173,6 +178,27 @@ function registerHandlers(bot: Bot, env: Env): void {
     await ctx.reply(`💳 Saldos\n${lines.join("\n")}\n\nTotal: ${formatBRL(total)}`);
   });
 
+  // /fatura — fatura aberta (corrente) de cada cartão.
+  bot.command("fatura", async (ctx) => {
+    const user = await userOf(ctx);
+    if (!user) return;
+    const cards = await listUserCards(database, user.id);
+    if (cards.length === 0) {
+      await ctx.reply("Você ainda não tem cartões cadastrados.");
+      return;
+    }
+    const lines: string[] = [];
+    for (const card of cards) {
+      const month = computeInvoiceMonth(todaySaoPaulo(), card.closingDay);
+      const inv = await getInvoice(database, user.id, card.id, month);
+      lines.push(
+        `💳 ${card.name} — fatura ${formatMonth(month)}: ${formatBRL(inv.totalCents)}` +
+          (inv.paid ? " ✅" : ""),
+      );
+    }
+    await ctx.reply(lines.join("\n"));
+  });
+
   // /desfazer — remove a última transação vinda do bot.
   bot.command("desfazer", async (ctx) => {
     const user = await userOf(ctx);
@@ -195,16 +221,41 @@ function registerHandlers(bot: Bot, env: Env): void {
       await ctx.reply('Não entendi 🤔. Tente algo como "mercado 50" ou "+1000 salário".');
       return;
     }
+
+    // Sintaxe "... no <cartão>": detecta o cartão e limpa a descrição.
+    let cardId: number | undefined;
+    let description = parsed.description;
+    const cards = await listUserCards(database, user.id);
+    if (cards.length > 0) {
+      const m = matchCard(parsed.description, cards);
+      if (m) {
+        cardId = m.cardId;
+        description = m.description;
+      }
+    }
+
     const tx = await createTransaction(database, user.id, {
-      ...parsed,
+      type: parsed.type,
+      amountCents: parsed.amountCents,
+      description,
+      cardId,
       source: "telegram",
     });
     const cat = await getUserCategory(database, user.id, tx.categoryId);
     const emoji = parsed.type === "entrada" ? "🟢" : "🔴";
     const label = parsed.type === "entrada" ? "Entrada" : "Saída";
-    await ctx.reply(
-      `${emoji} ${label} registrada: ${formatBRL(tx.amountCents)}\n${tx.description} • ${cat?.name ?? "—"}`,
-    );
+
+    if (cardId !== undefined) {
+      const card = cards.find((c) => c.id === cardId);
+      await ctx.reply(
+        `${emoji} ${label} no cartão ${card?.name ?? ""}: ${formatBRL(tx.amountCents)}\n` +
+          `${tx.description} • ${cat?.name ?? "—"} • fatura ${formatMonth(tx.invoiceMonth ?? "")}`,
+      );
+    } else {
+      await ctx.reply(
+        `${emoji} ${label} registrada: ${formatBRL(tx.amountCents)}\n${tx.description} • ${cat?.name ?? "—"}`,
+      );
+    }
   });
 }
 

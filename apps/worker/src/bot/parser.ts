@@ -101,3 +101,35 @@ export function parseEntry(text: string): ParsedEntry | null {
     description: description.length > 0 ? description : raw,
   };
 }
+
+export type CardLike = { id: number; name: string };
+
+// Detecta o cartão no lançamento pela sintaxe "... no <cartão>" / nome do cartão
+// (match fuzzy simples por nome normalizado). Retorna o cardId e a descrição limpa.
+export function matchCard(
+  description: string,
+  cards: readonly CardLike[],
+): { cardId: number; description: string } | null {
+  const hay = ` ${normalize(description)} `;
+  let best: { card: CardLike; needle: string } | null = null;
+  for (const card of cards) {
+    const needle = normalize(card.name);
+    if (needle.length === 0) continue;
+    if (hay.includes(` ${needle} `) && (!best || needle.length > best.needle.length)) {
+      best = { card, needle };
+    }
+  }
+  if (!best) return null;
+
+  const cleaned = ` ${normalize(description)} `
+    .replace(` no ${best.needle} `, " ")
+    .replace(` na ${best.needle} `, " ")
+    .replace(` ${best.needle} `, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return {
+    cardId: best.card.id,
+    description: cleaned.length > 0 ? cleaned : description,
+  };
+}

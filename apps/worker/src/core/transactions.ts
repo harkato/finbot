@@ -7,6 +7,7 @@ import { and, desc, eq, like } from "drizzle-orm";
 import type { Db } from "../db/client";
 import { transactions, type Transaction } from "../db/schema";
 import { getDefaultAccountId, getUserAccount } from "./accounts";
+import { computeInvoiceMonth, getUserCard } from "./cards";
 import { categorize } from "./categorize";
 import { getUserCategory, listUserCategories } from "./categories";
 import { todaySaoPaulo } from "./dates";
@@ -48,16 +49,30 @@ export async function createTransaction(
     input.categoryId,
   );
 
-  // Resolve conta/cartão. Sem indicação ⇒ conta padrão (Carteira). Valida posse da conta
-  // explícita. (cardId é validado na Fase 4.)
+  // Resolve conta/cartão (invariante: exatamente um). Gasto em cartão não toca conta,
+  // entra na fatura invoiceMonth e nasce paid:false (seção 6.2). Sem indicação ⇒ conta
+  // padrão (Carteira).
   let accountId = input.accountId ?? null;
   const cardId = input.cardId ?? null;
-  if (accountId !== null) {
-    const acc = await getUserAccount(database, userId, accountId);
-    if (!acc) throw new HttpError(422, "invalid_account", "conta inexistente");
+  let invoiceMonth = input.invoiceMonth ?? null;
+  let paid = input.paid;
+
+  if (accountId !== null && cardId !== null) {
+    throw new HttpError(422, "account_xor_card", "informe conta OU cartão, não ambos");
   }
-  if (accountId === null && cardId === null) {
-    accountId = await getDefaultAccountId(database, userId);
+
+  if (cardId !== null) {
+    const card = await getUserCard(database, userId, cardId);
+    if (!card) throw new HttpError(422, "invalid_card", "cartão inexistente");
+    invoiceMonth = invoiceMonth ?? computeInvoiceMonth(date, card.closingDay);
+    paid = paid ?? false; // gasto em cartão nasce a pagar
+  } else {
+    if (accountId !== null) {
+      const acc = await getUserAccount(database, userId, accountId);
+      if (!acc) throw new HttpError(422, "invalid_account", "conta inexistente");
+    } else {
+      accountId = await getDefaultAccountId(database, userId);
+    }
   }
 
   const inserted = await database
@@ -70,9 +85,9 @@ export async function createTransaction(
       categoryId,
       accountId,
       cardId,
-      invoiceMonth: input.invoiceMonth ?? null,
+      invoiceMonth,
       date,
-      paid: input.paid ?? true,
+      paid: paid ?? true,
       tags: JSON.stringify(input.tags ?? []),
       source: input.source,
     })
