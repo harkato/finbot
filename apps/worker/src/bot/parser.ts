@@ -12,7 +12,15 @@ export type ParsedEntry = {
   type: TransactionType;
   amountCents: number;
   description: string;
+  tags: string[];
 };
+
+// Extrai #tags do texto (ex.: "uber 20 #trabalho #viagem").
+function extractTags(text: string): string[] {
+  const matches = text.match(/#([\p{L}\p{N}_-]+)/gu);
+  if (!matches) return [];
+  return [...new Set(matches.map((t) => t.slice(1).toLowerCase()))];
+}
 
 // Converte um token "dinheiro" BR em centavos. Regras:
 //   - vírgula presente ⇒ separador decimal; pontos são milhar ("1.234,56" → 123456)
@@ -81,9 +89,12 @@ export function parseEntry(text: string): ParsedEntry | null {
   const amountCents = parseMoneyToken(chosen);
   if (amountCents === null) return null;
 
-  // Descrição = corpo sem o token do valor, colapsado.
+  const tags = extractTags(raw);
+
+  // Descrição = corpo sem o token do valor e sem as #tags, colapsado.
   const description = body
     .replace(chosen, " ")
+    .replace(/#([\p{L}\p{N}_-]+)/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -99,6 +110,7 @@ export function parseEntry(text: string): ParsedEntry | null {
     type,
     amountCents,
     description: description.length > 0 ? description : raw,
+    tags,
   };
 }
 

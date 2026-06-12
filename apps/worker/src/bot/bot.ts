@@ -11,6 +11,7 @@ import {
 } from "../core/cards";
 import { getUserCategory } from "../core/categories";
 import { currentMonth, todaySaoPaulo } from "../core/dates";
+import { listGoals } from "../core/goals";
 import { createInvite, consumeInvite } from "../core/invites";
 import { getCashflow, getSummary } from "../core/reports";
 import {
@@ -55,6 +56,20 @@ function budgetSuffix(b: BudgetStatus): string {
     return `\n⚠️ Atenção ao orçamento: ${formatBRL(b.spentCents)} de ${formatBRL(b.limitCents)} (${pct}%)`;
   }
   return "";
+}
+
+function summaryText(month: string, s: { entradas: number; saidas: number; saldo: number; porCategoria: { type: string; name: string; totalCents: number }[] }): string {
+  const cats = s.porCategoria
+    .filter((c) => c.type === "saida")
+    .slice(0, 8)
+    .map((c) => `  • ${c.name}: ${formatBRL(c.totalCents)}`);
+  return (
+    `📊 Resumo de ${formatMonth(month)}\n` +
+    `Entradas: ${formatBRL(s.entradas)}\n` +
+    `Saídas: ${formatBRL(s.saidas)}\n` +
+    `Saldo: ${formatBRL(s.saldo)}` +
+    (cats.length ? `\n\nGastos por categoria:\n${cats.join("\n")}` : "")
+  );
 }
 
 function registerHandlers(bot: Bot, env: Env): void {
@@ -133,23 +148,41 @@ function registerHandlers(bot: Bot, env: Env): void {
     await ctx.reply(`👥 Usuários (${all.length}):\n${lines.join("\n")}`);
   });
 
-  // /resumo — totais do mês.
+  // /resumo — totais do mês corrente.
   bot.command("resumo", async (ctx) => {
     const user = await userOf(ctx);
     if (!user) return;
     const month = currentMonth();
-    const s = await getSummary(database, user.id, month);
-    const cats = s.porCategoria
-      .filter((c) => c.type === "saida")
-      .slice(0, 8)
-      .map((c) => `  • ${c.name}: ${formatBRL(c.totalCents)}`);
-    await ctx.reply(
-      `📊 Resumo de ${formatMonth(month)}\n` +
-        `Entradas: ${formatBRL(s.entradas)}\n` +
-        `Saídas: ${formatBRL(s.saidas)}\n` +
-        `Saldo: ${formatBRL(s.saldo)}` +
-        (cats.length ? `\n\nGastos por categoria:\n${cats.join("\n")}` : ""),
-    );
+    await ctx.reply(summaryText(month, await getSummary(database, user.id, month)));
+  });
+
+  // /mes YYYY-MM — resumo de um mês específico.
+  bot.command("mes", async (ctx) => {
+    const user = await userOf(ctx);
+    if (!user) return;
+    const arg = ctx.match.trim();
+    if (!/^\d{4}-\d{2}$/.test(arg)) {
+      await ctx.reply("Use assim: /mes 2026-05");
+      return;
+    }
+    await ctx.reply(summaryText(arg, await getSummary(database, user.id, arg)));
+  });
+
+  // /metas — progresso das metas de economia.
+  bot.command("metas", async (ctx) => {
+    const user = await userOf(ctx);
+    if (!user) return;
+    const list = await listGoals(database, user.id);
+    if (list.length === 0) {
+      await ctx.reply("Você ainda não tem metas. Crie no dashboard. 🎯");
+      return;
+    }
+    const lines = list.map((g) => {
+      const pct = g.targetCents > 0 ? Math.round((g.savedCents / g.targetCents) * 100) : 0;
+      const bar = "█".repeat(Math.min(10, Math.floor(pct / 10))).padEnd(10, "░");
+      return `🎯 ${g.name}\n  ${bar} ${pct}% — ${formatBRL(g.savedCents)} / ${formatBRL(g.targetCents)}`;
+    });
+    await ctx.reply(`Suas metas:\n\n${lines.join("\n\n")}`);
   });
 
   // /fluxo — fluxo de caixa dos últimos 6 meses.
@@ -271,6 +304,7 @@ function registerHandlers(bot: Bot, env: Env): void {
       amountCents: parsed.amountCents,
       description,
       cardId,
+      tags: parsed.tags,
       source: "telegram",
     });
     const cat = await getUserCategory(database, user.id, tx.categoryId);

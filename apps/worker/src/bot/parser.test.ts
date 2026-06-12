@@ -32,6 +32,7 @@ describe("parseEntry", () => {
       type: "saida",
       amountCents: 3250,
       description: "almoço no ifood",
+      tags: [],
     });
   });
   it("entrada por prefixo +", () => {
@@ -39,7 +40,14 @@ describe("parseEntry", () => {
       type: "entrada",
       amountCents: 500000,
       description: "freelance",
+      tags: [],
     });
+  });
+  it("extrai #tags e limpa a descrição", () => {
+    const r = parseEntry("uber 20 #trabalho #viagem");
+    expect(r?.amountCents).toBe(2000);
+    expect(r?.description).toBe("uber");
+    expect(r?.tags).toEqual(["trabalho", "viagem"]);
   });
   it("entrada por keyword", () => {
     const r = parseEntry("salário 5000");

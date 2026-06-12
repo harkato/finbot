@@ -143,6 +143,73 @@ export const upsertBudgetSchema = z.object({
 });
 export type UpsertBudget = z.infer<typeof upsertBudgetSchema>;
 
+// ── Metas (Fase 7) ────────────────────────────────────────────────────────────
+export const createGoalSchema = z.object({
+  name: z.string().trim().min(1, "nome obrigatório"),
+  targetCents: z.number().int().positive(),
+  savedCents: z.number().int().nonnegative().optional(),
+  deadline: isoDate.optional(),
+});
+export type CreateGoal = z.infer<typeof createGoalSchema>;
+
+export const patchGoalSchema = z
+  .object({
+    name: z.string().trim().min(1),
+    targetCents: z.number().int().positive(),
+    savedCents: z.number().int().nonnegative(),
+    deadline: isoDate.nullable(),
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, { message: "nada para atualizar" });
+export type PatchGoal = z.infer<typeof patchGoalSchema>;
+
+// ── Recorrências (Fase 7) ─────────────────────────────────────────────────────
+export const createRecurrenceSchema = z.object({
+  description: z.string().trim().min(1),
+  type: transactionTypeSchema,
+  amountCents: amountCents,
+  categoryId: positiveInt.optional(),
+  accountId: positiveInt.optional(),
+  cardId: positiveInt.optional(),
+  dayOfMonth: z.number().int().min(1).max(28),
+});
+export type CreateRecurrence = z.infer<typeof createRecurrenceSchema>;
+
+export const patchRecurrenceSchema = z
+  .object({
+    description: z.string().trim().min(1),
+    type: transactionTypeSchema,
+    amountCents: amountCents,
+    categoryId: positiveInt.nullable(),
+    accountId: positiveInt.nullable(),
+    cardId: positiveInt.nullable(),
+    dayOfMonth: z.number().int().min(1).max(28),
+    active: z.boolean(),
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, { message: "nada para atualizar" });
+export type PatchRecurrence = z.infer<typeof patchRecurrenceSchema>;
+
+// ── Categorias CRUD (Fase 6 — editor de keywords) ─────────────────────────────
+export const createCategorySchema = z.object({
+  name: z.string().trim().min(1),
+  kind: categoryKindSchema.optional(),
+  color: z.string().trim().optional(),
+  keywords: z.array(z.string().trim().min(1)).optional(),
+});
+export type CreateCategory = z.infer<typeof createCategorySchema>;
+
+export const patchCategorySchema = z
+  .object({
+    name: z.string().trim().min(1),
+    kind: categoryKindSchema,
+    color: z.string().trim(),
+    keywords: z.array(z.string().trim().min(1)),
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, { message: "nada para atualizar" });
+export type PatchCategory = z.infer<typeof patchCategorySchema>;
+
 // ── Status de orçamento (anexado à resposta do POST; Fase 5) ───────────────────
 export type BudgetStatus = {
   spentCents: number;

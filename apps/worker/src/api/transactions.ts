@@ -5,6 +5,7 @@ import {
 } from "@finbot/shared";
 import { Hono } from "hono";
 import { budgetStatusForTransaction } from "../core/budgets";
+import { exportTransactionsCsv } from "../core/export";
 import {
   createTransaction,
   deleteTransaction,
@@ -40,6 +41,19 @@ transactionsRoutes.get("/", async (c) => {
   }
   const items = await listTransactions(db(c.env.DB), c.get("userId"), parsed.data);
   return c.json({ transactions: items });
+});
+
+// GET /api/transactions/export?month= — CSV (Excel BR).
+transactionsRoutes.get("/export", async (c) => {
+  const month = c.req.query("month");
+  const csv = await exportTransactionsCsv(db(c.env.DB), c.get("userId"), month);
+  const filename = `finbot-${month ?? "tudo"}.csv`;
+  return new Response(`﻿${csv}`, {
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    },
+  });
 });
 
 transactionsRoutes.patch("/:id", async (c) => {

@@ -1,8 +1,10 @@
 import { app } from "./app";
 import { buildAlertsForUser, sendTelegramMessage } from "./core/alerts";
 import { todaySaoPaulo } from "./core/dates";
+import { runDueRecurrences } from "./core/recurrences";
 import { listUsers } from "./core/users";
 import { db } from "./db/client";
+import { formatBRL } from "./bot/format";
 import type { Env } from "./env";
 
 // Entrypoint do Worker: um único Worker contém API (Hono), o bot e o cron de alertas.
@@ -20,12 +22,20 @@ export default {
     const today = todaySaoPaulo();
     const users = await listUsers(database);
     for (const user of users) {
-      const alerts = await buildAlertsForUser(database, user, today);
-      if (alerts.length === 0) continue;
+      // 1) materializa recorrências vencidas hoje
+      const created = await runDueRecurrences(database, user.id, today);
+      const lines: string[] = created.map(
+        (t) => `🔁 Recorrência: ${t.description} — ${formatBRL(t.amountCents)}`,
+      );
+
+      // 2) alertas do dia
+      lines.push(...(await buildAlertsForUser(database, user, today)));
+
+      if (lines.length === 0) continue;
       await sendTelegramMessage(
         env.BOT_TOKEN,
         user.telegramId,
-        `🔔 finbot — seus alertas de hoje\n\n${alerts.join("\n")}`,
+        `🔔 finbot — hoje\n\n${lines.join("\n")}`,
       );
     }
   },

@@ -261,6 +261,7 @@ Todos os bodies validados com schemas Zod de `packages/shared` (importados tamb�
 **Fase 6 — Dashboard.** Nuxt na Vercel com proxy + login por magic link do bot + telas na ordem da seção 10. ✅ Aceite: dois usuários logados veem cada um apenas os próprios dados; nenhum segredo de serviço aparece no DevTools.
 
 **Fase 7 — Backlog.** Metas (goals), recorrências, export CSV, tags no bot, `/mes YYYY-MM`.
+> **Status: implementado, validado localmente e em produção (2026-06-12).** Migration `0004` (goals + recurrences). `acceptance-phase7.ts` (13 checks) verde, incluindo o cron real via `wrangler dev --test-scheduled`. Entregue: metas CRUD (`/api/goals`) + `/metas` no bot; categorias CRUD com proteção das indeletáveis (`/api/categories` POST/PATCH/DELETE — editor de keywords do dashboard); tags `#tag` extraídas no parser + filtro `?tag=`; `/mes YYYY-MM`; export `GET /api/transactions/export?month=` (CSV `;`/decimal vírgula + BOM, Excel BR); recorrências CRUD + materialização no `scheduled` (cria a transação no `dayOfMonth`, dedup por `lastRunMonth`). Deploy em produção feito.
 
 ## 13. Comandos úteis
 

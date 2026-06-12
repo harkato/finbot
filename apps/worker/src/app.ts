@@ -4,6 +4,8 @@ import { alertsRoutes } from "./api/alerts";
 import { budgetsRoutes } from "./api/budgets";
 import { cardsRoutes } from "./api/cards";
 import { categoriesRoutes } from "./api/categories";
+import { goalsRoutes } from "./api/goals";
+import { recurrencesRoutes } from "./api/recurrences";
 import { health } from "./api/health";
 import { internalRoutes } from "./api/internal";
 import { reportsRoutes } from "./api/reports";
@@ -25,6 +27,8 @@ app.route("/api/accounts", accountsRoutes);
 app.route("/api/cards", cardsRoutes);
 app.route("/api/categories", categoriesRoutes);
 app.route("/api/budgets", budgetsRoutes);
+app.route("/api/goals", goalsRoutes);
+app.route("/api/recurrences", recurrencesRoutes);
 app.route("/api/alerts", alertsRoutes);
 app.route("/api", reportsRoutes);
 

@@ -169,6 +169,47 @@ export const budgets = sqliteTable(
 );
 
 export type Budget = typeof budgets.$inferSelect;
+
+// Fase 7 — metas de economia.
+export const goals = sqliteTable(
+  "goals",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    name: text("name").notNull(),
+    targetCents: integer("target_cents").notNull(),
+    savedCents: integer("saved_cents").notNull().default(0),
+    deadline: text("deadline"), // "YYYY-MM-DD" opcional
+  },
+  (t) => ({ byUser: index("goals_user_idx").on(t.userId) }),
+);
+
+// Fase 7 — recorrências (lançamentos automáticos mensais). O cron materializa a transação
+// no dia `dayOfMonth`; `lastRunMonth` evita duplicar no mesmo mês.
+export const recurrences = sqliteTable(
+  "recurrences",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    description: text("description").notNull(),
+    type: text("type", { enum: ["entrada", "saida"] }).notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    categoryId: integer("category_id").references(() => categories.id),
+    accountId: integer("account_id"),
+    cardId: integer("card_id"),
+    dayOfMonth: integer("day_of_month").notNull(), // 1-28
+    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    lastRunMonth: text("last_run_month"), // "YYYY-MM"
+  },
+  (t) => ({ byUser: index("recurrences_user_idx").on(t.userId) }),
+);
+
+export type Goal = typeof goals.$inferSelect;
+export type Recurrence = typeof recurrences.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Invite = typeof invites.$inferSelect;
