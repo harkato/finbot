@@ -8,12 +8,12 @@ compatibility_date = "2024-12-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "finbot"
-database_id = "PLACEHOLDER_RODE_wrangler_d1_create_finbot"
+database_id = "710bad1e-f007-4dbe-818e-dc6a442c4890"
 migrations_dir = "drizzle"
 
 [vars]
 # Telegram ID do admin (quem gera convites). Não é segredo — pode ficar versionado.
-ADMIN_TELEGRAM_ID = "0"
+ADMIN_TELEGRAM_ID = "846355192"
 
 # Secrets (NÃO versionar — definir com `wrangler secret put <NOME>`):
 #   BOT_TOKEN                 token do BotFather

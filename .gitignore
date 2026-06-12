@@ -152,3 +152,6 @@ vite.config.ts.timestamp-*
 
 # Local databases
 *.sqlite
+
+# CA do Norton p/ inspeção SSL local (NODE_EXTRA_CA_CERTS)
+apps/worker/norton-ca.*
