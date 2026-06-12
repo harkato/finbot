@@ -5,6 +5,7 @@ import { budgetsRoutes } from "./api/budgets";
 import { cardsRoutes } from "./api/cards";
 import { categoriesRoutes } from "./api/categories";
 import { goalsRoutes } from "./api/goals";
+import { meRoutes } from "./api/me";
 import { recurrencesRoutes } from "./api/recurrences";
 import { health } from "./api/health";
 import { internalRoutes } from "./api/internal";
@@ -22,6 +23,7 @@ app.post("/webhook/telegram", (c) => handleTelegramWebhook(c));
 
 app.route("/api", health);
 app.route("/api/internal", internalRoutes);
+app.route("/api/me", meRoutes);
 app.route("/api/transactions", transactionsRoutes);
 app.route("/api/accounts", accountsRoutes);
 app.route("/api/cards", cardsRoutes);

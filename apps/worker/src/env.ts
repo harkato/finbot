@@ -7,6 +7,8 @@ export interface Env {
   DB: D1Database;
   // var (wrangler.toml [vars])
   ADMIN_TELEGRAM_ID: string;
+  // URL pública do dashboard (p/ o magic link do /login). Ex.: https://finbot.vercel.app
+  DASHBOARD_URL?: string;
   // secrets (wrangler secret put) — usados a partir da Fase 2
   BOT_TOKEN: string;
   API_TOKEN: string;

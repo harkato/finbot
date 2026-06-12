@@ -1,0 +1,20 @@
+{
+  "name": "@finbot/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@finbot/shared": "workspace:*",
+    "echarts": "^5.5.1",
+    "nuxt": "3.12.4",
+    "vue": "^3.4.0",
+    "vue-echarts": "^7.0.3"
+  }
+}

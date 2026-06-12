@@ -3,3 +3,4 @@
 export const SHARED_PACKAGE = "@finbot/shared" as const;
 
 export * from "./contracts";
+export * from "./tokens";

@@ -1,0 +1,3 @@
+# node_modules plano (hoisted) — necessário p/ o oxc-walker do Nuxt 4 resolver o oxc-parser.
+[install]
+linker = "hoisted"

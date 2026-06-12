@@ -1,7 +1,7 @@
 import { Bot, type Context, type Transformer, webhookCallback } from "grammy";
 import type { UserFromGetMe } from "grammy/types";
 import type { Context as HonoContext } from "hono";
-import type { BudgetStatus } from "@finbot/shared";
+import { type BudgetStatus, MAGIC_TTL_SECONDS, signToken } from "@finbot/shared";
 import { listUserAccounts } from "../core/accounts";
 import { budgetStatusForTransaction, listBudgetsWithStatus } from "../core/budgets";
 import {
@@ -128,6 +128,25 @@ function registerHandlers(bot: Bot, env: Env): void {
     }
 
     await ctx.reply("Olá! Este bot é fechado e o acesso é por convite. Peça um link a quem te indicou. 🙂");
+  });
+
+  // /login — magic link de acesso ao dashboard (token HMAC de curta duração).
+  bot.command("login", async (ctx) => {
+    const user = await userOf(ctx);
+    if (!user) return;
+    if (!env.SESSION_SECRET || !env.DASHBOARD_URL) {
+      await ctx.reply("O dashboard ainda não está configurado. 🙇");
+      return;
+    }
+    const token = await signToken(
+      env.SESSION_SECRET,
+      { uid: user.id, typ: "magic" },
+      MAGIC_TTL_SECONDS,
+    );
+    await ctx.reply(
+      `🔐 Seu acesso ao dashboard (expira em 10 minutos, não compartilhe):\n` +
+        `${env.DASHBOARD_URL}/auth?token=${token}`,
+    );
   });
 
   // /convite — admin gera código + deep link (seção 6.0).
