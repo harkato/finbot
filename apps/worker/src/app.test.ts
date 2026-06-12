@@ -8,7 +8,7 @@ describe("GET /api/health", () => {
     expect(await res.json()).toEqual({
       status: "ok",
       service: "finbot-worker",
-      phase: 0,
+      phase: 1,
     });
   });
 

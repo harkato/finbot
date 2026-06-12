@@ -5,5 +5,5 @@ import type { AppBindings } from "../env";
 export const health = new Hono<AppBindings>();
 
 health.get("/health", (c) =>
-  c.json({ status: "ok", service: "finbot-worker", phase: 0 }),
+  c.json({ status: "ok", service: "finbot-worker", phase: 1 }),
 );

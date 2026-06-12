@@ -14,5 +14,14 @@ export interface Env {
   SESSION_SECRET: string;
 }
 
+import type { User } from "./db/schema";
+
+// Variáveis de contexto preenchidas pelos middlewares de auth.
+export type AppVariables = {
+  user: User;
+  userId: number;
+};
+
 // Tipagem padrão das rotas Hono deste Worker.
 export type AppBindings = { Bindings: Env };
+export type AppEnv = { Bindings: Env; Variables: AppVariables };
