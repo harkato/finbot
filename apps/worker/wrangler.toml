@@ -11,6 +11,10 @@ database_name = "finbot"
 database_id = "710bad1e-f007-4dbe-818e-dc6a442c4890"
 migrations_dir = "drizzle"
 
+# Vars públicas (não-segredas) versionadas.
+[vars]
+DASHBOARD_URL = "https://finbot-worker.vercel.app"
+
 # Secrets/vars definidos na Cloudflare (NÃO versionar — `wrangler secret put <NOME>`):
 #   BOT_TOKEN                 token do BotFather
 #   API_TOKEN                 bearer interno da API (openssl rand -hex 32)
