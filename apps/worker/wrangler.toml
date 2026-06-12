@@ -11,15 +11,12 @@ database_name = "finbot"
 database_id = "710bad1e-f007-4dbe-818e-dc6a442c4890"
 migrations_dir = "drizzle"
 
-[vars]
-# Telegram ID do admin (quem gera convites). Não é segredo — pode ficar versionado.
-ADMIN_TELEGRAM_ID = "846355192"
-
-# Secrets (NÃO versionar — definir com `wrangler secret put <NOME>`):
+# Secrets/vars definidos na Cloudflare (NÃO versionar — `wrangler secret put <NOME>`):
 #   BOT_TOKEN                 token do BotFather
 #   API_TOKEN                 bearer interno da API (openssl rand -hex 32)
 #   TELEGRAM_WEBHOOK_SECRET   valida o header do webhook do Telegram
 #   SESSION_SECRET            assina magic links e cookies de sessão
+#   ADMIN_TELEGRAM_ID         Telegram ID do admin (mantido fora do repo, no painel)
 # Localmente, defina-os em apps/worker/.dev.vars (ignorado pelo git).
 
 # Cron de alertas (Fase 5). Cron é UTC; 08:00 America/Sao_Paulo = 11:00 UTC.
