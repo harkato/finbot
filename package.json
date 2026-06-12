@@ -1,0 +1,21 @@
+{
+  "name": "finbot",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "worker:dev": "bun --cwd apps/worker run dev",
+    "worker:deploy": "bun --cwd apps/worker run deploy",
+    "worker:test": "bun --cwd apps/worker test",
+    "db:generate": "bun --cwd apps/worker run db:generate",
+    "db:migrate:local": "bun --cwd apps/worker run db:migrate:local",
+    "db:migrate:remote": "bun --cwd apps/worker run db:migrate:remote",
+    "typecheck": "bun --cwd packages/shared run typecheck && bun --cwd apps/worker run typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

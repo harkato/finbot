@@ -1,0 +1,27 @@
+name = "finbot"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+# D1 — banco SQLite gerenciado.
+# IMPORTANTE: rode `bunx wrangler d1 create finbot` uma vez e cole o database_id retornado aqui.
+# Para dev local (Miniflare) o database_id pode ser o placeholder; o --remote exige o id real.
+[[d1_databases]]
+binding = "DB"
+database_name = "finbot"
+database_id = "PLACEHOLDER_RODE_wrangler_d1_create_finbot"
+migrations_dir = "drizzle"
+
+[vars]
+# Telegram ID do admin (quem gera convites). Não é segredo — pode ficar versionado.
+ADMIN_TELEGRAM_ID = "0"
+
+# Secrets (NÃO versionar — definir com `wrangler secret put <NOME>`):
+#   BOT_TOKEN                 token do BotFather
+#   API_TOKEN                 bearer interno da API (openssl rand -hex 32)
+#   TELEGRAM_WEBHOOK_SECRET   valida o header do webhook do Telegram
+#   SESSION_SECRET            assina magic links e cookies de sessão
+# Localmente, defina-os em apps/worker/.dev.vars (ignorado pelo git).
+
+# Cron de alertas — habilitado na Fase 5 (cron é UTC; 08:00 America/Sao_Paulo = "0 11 * * *").
+# [triggers]
+# crons = ["0 11 * * *"]
