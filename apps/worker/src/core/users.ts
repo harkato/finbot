@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { Db } from "../db/client";
-import { categories, users, type User } from "../db/schema";
+import { accounts, categories, users, type User } from "../db/schema";
 import { DEFAULT_CATEGORIES } from "./seed";
 
 export async function getUserByTelegramId(
@@ -57,6 +57,14 @@ export async function createUserWithSeed(
       isSystem: c.isSystem ?? false,
     })),
   );
+
+  // Conta padrão "Carteira" (seção 6.0, a partir da Fase 3) — destino dos lançamentos
+  // sem indicação de conta/cartão.
+  await database.insert(accounts).values({
+    userId: user.id,
+    name: "Carteira",
+    type: "carteira",
+  });
 
   return user;
 }

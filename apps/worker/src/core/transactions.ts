@@ -6,6 +6,7 @@ import type {
 import { and, desc, eq, like } from "drizzle-orm";
 import type { Db } from "../db/client";
 import { transactions, type Transaction } from "../db/schema";
+import { getDefaultAccountId, getUserAccount } from "./accounts";
 import { categorize } from "./categorize";
 import { getUserCategory, listUserCategories } from "./categories";
 import { todaySaoPaulo } from "./dates";
@@ -47,6 +48,18 @@ export async function createTransaction(
     input.categoryId,
   );
 
+  // Resolve conta/cartão. Sem indicação ⇒ conta padrão (Carteira). Valida posse da conta
+  // explícita. (cardId é validado na Fase 4.)
+  let accountId = input.accountId ?? null;
+  const cardId = input.cardId ?? null;
+  if (accountId !== null) {
+    const acc = await getUserAccount(database, userId, accountId);
+    if (!acc) throw new HttpError(422, "invalid_account", "conta inexistente");
+  }
+  if (accountId === null && cardId === null) {
+    accountId = await getDefaultAccountId(database, userId);
+  }
+
   const inserted = await database
     .insert(transactions)
     .values({
@@ -55,8 +68,8 @@ export async function createTransaction(
       amountCents: input.amountCents,
       description: input.description,
       categoryId,
-      accountId: input.accountId ?? null,
-      cardId: input.cardId ?? null,
+      accountId,
+      cardId,
       invoiceMonth: input.invoiceMonth ?? null,
       date,
       paid: input.paid ?? true,

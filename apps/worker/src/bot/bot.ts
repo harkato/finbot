@@ -1,6 +1,7 @@
 import { Bot, type Context, type Transformer, webhookCallback } from "grammy";
 import type { UserFromGetMe } from "grammy/types";
 import type { Context as HonoContext } from "hono";
+import { listUserAccounts } from "../core/accounts";
 import { getUserCategory } from "../core/categories";
 import { currentMonth } from "../core/dates";
 import { createInvite, consumeInvite } from "../core/invites";
@@ -156,6 +157,20 @@ function registerHandlers(bot: Bot, env: Env): void {
       return `${formatDayMonth(t.date)} ${sign}${formatBRL(t.amountCents)} — ${t.description}`;
     });
     await ctx.reply(`🧾 Últimas transações\n${lines.join("\n")}`);
+  });
+
+  // /contas — saldos de cada conta.
+  bot.command("contas", async (ctx) => {
+    const user = await userOf(ctx);
+    if (!user) return;
+    const list = await listUserAccounts(database, user.id);
+    if (list.length === 0) {
+      await ctx.reply("Você ainda não tem contas. (A Carteira é criada no cadastro.)");
+      return;
+    }
+    const total = list.reduce((acc, a) => acc + a.balanceCents, 0);
+    const lines = list.map((a) => `• ${a.name}: ${formatBRL(a.balanceCents)}`);
+    await ctx.reply(`💳 Saldos\n${lines.join("\n")}\n\nTotal: ${formatBRL(total)}`);
   });
 
   // /desfazer — remove a última transação vinda do bot.

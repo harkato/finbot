@@ -101,6 +101,28 @@ export const transactions = sqliteTable(
   }),
 );
 
+// Fase 3 — contas. Saldo é SEMPRE derivado (nunca armazenado): initialBalanceCents +
+// Σ entradas pagas − Σ saídas pagas da conta.
+export const accounts = sqliteTable(
+  "accounts",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    name: text("name").notNull(),
+    type: text("type", { enum: ["carteira", "corrente", "poupanca"] })
+      .notNull()
+      .default("corrente"),
+    initialBalanceCents: integer("initial_balance_cents").notNull().default(0),
+    archived: integer("archived", { mode: "boolean" }).notNull().default(false),
+  },
+  (t) => ({
+    byUser: index("accounts_user_idx").on(t.userId),
+  }),
+);
+
+export type Account = typeof accounts.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Invite = typeof invites.$inferSelect;

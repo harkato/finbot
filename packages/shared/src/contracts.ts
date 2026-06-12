@@ -84,6 +84,30 @@ export const cashflowQuerySchema = z.object({
   months: z.coerce.number().int().positive().max(36).optional().default(6),
 });
 
+// ── Contas (Fase 3) ───────────────────────────────────────────────────────────
+export const accountTypeSchema = z.enum(["carteira", "corrente", "poupanca"]);
+export type AccountType = z.infer<typeof accountTypeSchema>;
+
+const balanceCents = z.number().int(); // pode ser negativo (saldo inicial)
+
+export const createAccountSchema = z.object({
+  name: z.string().trim().min(1, "nome obrigatório"),
+  type: accountTypeSchema.optional(),
+  initialBalanceCents: balanceCents.optional(),
+});
+export type CreateAccount = z.infer<typeof createAccountSchema>;
+
+export const patchAccountSchema = z
+  .object({
+    name: z.string().trim().min(1),
+    type: accountTypeSchema,
+    initialBalanceCents: balanceCents,
+    archived: z.boolean(),
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, { message: "nada para atualizar" });
+export type PatchAccount = z.infer<typeof patchAccountSchema>;
+
 // ── Status de orçamento (anexado à resposta do POST; Fase 5) ───────────────────
 export type BudgetStatus = {
   spentCents: number;
